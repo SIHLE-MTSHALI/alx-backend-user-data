@@ -2,7 +2,10 @@
 """Module for handling personal data"""
 
 import re
+import logging
 from typing import List
+import os
+import mysql.connector
 
 
 def filter_datum(fields: List[str], redaction: str,
@@ -25,14 +28,94 @@ def filter_datum(fields: List[str], redaction: str,
     return message
 
 
-if __name__ == "__main__":
-    fields = ["password", "date_of_birth"]
-    messages = [
-        "name=egg;email=eggmin@eggsample.com;password=eggcellent;"
-        "date_of_birth=12/12/1986;",
-        "name=bob;email=bob@dylan.com;password=bobbycool;"
-        "date_of_birth=03/04/1993;"
-    ]
+class RedactingFormatter(logging.Formatter):
+    """ Redacting Formatter class """
 
-    for message in messages:
-        print(filter_datum(fields, 'xxx', message, ';'))
+    REDACTION = "***"
+    FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
+    SEPARATOR = ";"
+
+    def __init__(self, fields: List[str]):
+        super(RedactingFormatter, self).__init__(self.FORMAT)
+        self.fields = fields
+
+    def format(self, record: logging.LogRecord) -> str:
+        """
+        Format the specified record as text.
+
+        Args:
+            record: A LogRecord instance representing the event being logged
+
+        Returns:
+            Formatted string with sensitive information redacted
+        """
+        message = super().format(record)
+        return filter_datum(self.fields, self.REDACTION,
+                            message, self.SEPARATOR)
+
+
+PII_FIELDS = ("name", "email", "phone", "ssn", "password")
+
+
+def get_logger() -> logging.Logger:
+    """
+    Creates and configures a logger named "user_data".
+
+    Returns:
+        logging.Logger: Configured logger object
+    """
+    logger = logging.getLogger("user_data")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(RedactingFormatter(PII_FIELDS))
+
+    logger.addHandler(stream_handler)
+
+    return logger
+
+
+def get_db() -> mysql.connector.connection.MySQLConnection:
+    """
+    Connects to the MySQL database using environment variables.
+
+    Returns:
+        mysql.connector.connection.MySQLConnection: Database connection object
+    """
+    username = os.getenv("PERSONAL_DATA_DB_USERNAME", "root")
+    password = os.getenv("PERSONAL_DATA_DB_PASSWORD", "")
+    host = os.getenv("PERSONAL_DATA_DB_HOST", "localhost")
+    db_name = os.getenv("PERSONAL_DATA_DB_NAME")
+
+    connection = mysql.connector.connect(
+        user=username,
+        password=password,
+        host=host,
+        database=db_name
+    )
+
+    return connection
+
+
+def main() -> None:
+    """
+    Main function to retrieve and display user data from the database.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM users;")
+
+    logger = get_logger()
+
+    for row in cursor:
+        message = "; ".join(f"{field}={value}" for field, value
+                            in zip(cursor.column_names, row))
+        logger.info(message)
+
+    cursor.close()
+    db.close()
+
+
+if __name__ == "__main__":
+    main()
