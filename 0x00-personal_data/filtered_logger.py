@@ -6,6 +6,7 @@ import logging
 from typing import List
 import os
 import mysql.connector
+from mysql.connector.connection import MySQLConnection
 
 
 def filter_datum(fields: List[str], redaction: str,
@@ -69,24 +70,24 @@ def get_logger() -> logging.Logger:
     logger.propagate = False
 
     stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(RedactingFormatter(PII_FIELDS))
+    stream_handler.setFormatter(RedactingFormatter(list(PII_FIELDS)))
 
     logger.addHandler(stream_handler)
 
     return logger
 
 
-def get_db() -> mysql.connector.connection.MySQLConnection:
+def get_db() -> MySQLConnection:
     """
     Connects to the MySQL database using environment variables.
 
     Returns:
-        mysql.connector.connection.MySQLConnection: Database connection object
+        MySQLConnection: Database connection object
     """
-    username = os.getenv("PERSONAL_DATA_DB_USERNAME", "root")
-    password = os.getenv("PERSONAL_DATA_DB_PASSWORD", "")
-    host = os.getenv("PERSONAL_DATA_DB_HOST", "localhost")
-    db_name = os.getenv("PERSONAL_DATA_DB_NAME")
+    username = os.environ.get("PERSONAL_DATA_DB_USERNAME", "root")
+    password = os.environ.get("PERSONAL_DATA_DB_PASSWORD", "")
+    host = os.environ.get("PERSONAL_DATA_DB_HOST", "localhost")
+    db_name = os.environ.get("PERSONAL_DATA_DB_NAME")
 
     connection = mysql.connector.connect(
         user=username,
