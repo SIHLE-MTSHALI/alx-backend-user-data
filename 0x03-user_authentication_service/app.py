@@ -21,7 +21,7 @@ def register_user():
     if email is None or password is None:
         return jsonify({"message": "email and password required"}), 400
     try:
-        user = AUTH.register_user(email, password)
+        AUTH.register_user(email, password)
         return jsonify({"email": email, "message": "user created"}), 200
     except ValueError:
         return jsonify({"message": "email already registered"}), 400
@@ -33,12 +33,10 @@ def log_in():
     email = request.form.get('email')
     password = request.form.get('password')
     if email is None or password is None:
-        abort(400)
+        abort(401)
     if not AUTH.valid_login(email, password):
         abort(401)
     session_id = AUTH.create_session(email)
-    if session_id is None:
-        abort(401)
     response = make_response(jsonify({"email": email, "message": "logged in"}))
     response.set_cookie("session_id", session_id)
     return response
@@ -93,7 +91,7 @@ def update_password():
     if not all([email, reset_token, new_password]):
         abort(400)
     try:
-        AUTH.update_password(email, reset_token, new_password)
+        AUTH.update_password(reset_token, new_password)
         return jsonify({"email": email, "message": "Password updated"}), 200
     except ValueError:
         abort(403)
