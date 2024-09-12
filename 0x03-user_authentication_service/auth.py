@@ -17,7 +17,8 @@ def _hash_password(password: str) -> str:
     Returns:
         str: The hashed password
     """
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return bcrypt.hashpw(password.encode('utf-8'),
+                         bcrypt.gensalt()).decode('utf-8')
 
 
 def _generate_uuid() -> str:
@@ -69,8 +70,10 @@ class Auth:
         """
         try:
             user = self._db.find_user_by(email=email)
-            if bcrypt.checkpw(password.encode('utf-8'),
-                              user.hashed_password.encode('utf-8')):
+            if bcrypt.checkpw(
+                password.encode('utf-8'),
+                user.hashed_password.encode('utf-8')
+            ):
                 return True
             else:
                 return False
