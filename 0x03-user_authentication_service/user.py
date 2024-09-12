@@ -7,7 +7,15 @@ Base = declarative_base()
 
 
 class User(Base):
-    """User class for SQLAlchemy mapping to 'users' table"""
+    """User class for SQLAlchemy mapping to 'users' table
+
+    Attributes:
+        id (int): The user's ID
+        email (str): The user's email address
+        hashed_password (str): The hashed password
+        session_id (str): The session ID
+        reset_token (str): The reset token
+    """
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
