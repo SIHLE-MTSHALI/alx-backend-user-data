@@ -91,11 +91,11 @@ class Auth:
         """
         try:
             user = self._db.find_user_by(email=email)
-            session_id = _generate_uuid()
-            self._db.update_user(user.id, session_id=session_id)
-            return session_id
         except NoResultFound:
             return None
+        session_id = _generate_uuid()
+        self._db.update_user(user.id, session_id=session_id)
+        return session_id
 
     def get_user_from_session_id(self, session_id: str) -> Union[User, None]:
         """Get a user from a session ID
@@ -148,10 +148,12 @@ class Auth:
         except NoResultFound:
             raise ValueError
 
-    def update_password(self, reset_token: str, password: str) -> None:
+    def update_password(self, email: str, reset_token:
+                        str, password: str) -> None:
         """Update user's password using reset token
 
         Args:
+            email (str): The user's email address
             reset_token (str): The reset token
             password (str): The new password
 
@@ -159,10 +161,10 @@ class Auth:
             None
 
         Raises:
-            ValueError: If reset token is invalid
+            ValueError: If reset token is invalid or email does not match
         """
         try:
-            user = self._db.find_user_by(reset_token=reset_token)
+            user = self._db.find_user_by(email=email, reset_token=reset_token)
             hashed_password = _hash_password(password)
             self._db.update_user(
                 user.id,
